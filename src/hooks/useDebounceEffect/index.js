@@ -1,15 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import useDebounceFn from '../useDebounceFn';
-
-// const useDebounceEffect = (fn, deps, options) => {
-//   const { run } = useDebounceFn(() => {
-//     fn();
-//   }, options);
-
-//   useEffect(() => {
-//     run();
-//   }, deps);
-// };
+import useUpdateEffect from '../useUpdateEffect';
 
 const useDebounceEffect = (fn, deps, options) => {
   const [data, setData] = useState(0);

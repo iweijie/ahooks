@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import usePersistFn from '../usePersistFn';
+import { useEffect, useRef } from 'react';
 
 const useUpdateEffect = (effect, deps) => {
   const isMounted = useRef(false);
