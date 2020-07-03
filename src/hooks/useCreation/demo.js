@@ -1,28 +1,22 @@
-import useUnmount from './index';
+import useCreation from './index';
+import usePrevEqual from '../usePrevEqual';
 import useToggle from '../useToggle';
 
-const Com = () => {
-  useUnmount(() => {
-    console.log('我是一只猪 --- useUnmount');
-  });
-  return <div>我是一只猪</div>;
-};
-const Com1 = () => {
-  useUnmount(() => {
-    console.log('我是一蜘蛛 --- useUnmount');
-  });
-  return <div>我是一蜘蛛</div>;
-};
-
 export default () => {
-  const [bool, toggle] = useToggle();
+  const [num, { toggle }] = useToggle(false, true);
+  const obj = useCreation(() => {
+    return {
+      weijie: 1,
+    };
+  });
+
+  console.log('useCreation', usePrevEqual(obj));
+
   return (
     <div>
       <h1>useUnmount</h1>
-      <div>当前值是：{str}</div>
+      <div>当前值是：{num}</div>
       <button onClick={toggle}>点我切换</button>
-      <div>-----------------</div>
-      {bool ? <Com /> : <Com1 />}
     </div>
   );
 };

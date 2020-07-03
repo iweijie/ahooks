@@ -1,8 +1,6 @@
 import { useState, useCallback } from 'react';
 import useDebounceFn from './index';
 
-let a, b, c;
-
 export default () => {
   const [num, setNum] = useState(0);
   const debounce = useDebounceFn(() => {

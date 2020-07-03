@@ -1,7 +1,7 @@
 import useToggle from './index';
 
 export default () => {
-  const [str, toggle, { setLeft, setRight }] = useToggle('1', '2');
+  const [str, { toggle, setLeft, setRight }] = useToggle('1', '2');
   console.log('toggle 刷新');
   return (
     <div>

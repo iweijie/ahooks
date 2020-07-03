@@ -7,7 +7,7 @@ const useCreation = (fn, deps) => {
     obj: undefined,
     deps: undefined,
   });
-  if (current.isMount === false || diff(current.deps, deps)) {
+  if (current.isMount === false || !diff(current.deps, deps)) {
     current.isMount = true;
     current.obj = isFunction(fn) ? fn() : undefined;
     current.deps = deps;

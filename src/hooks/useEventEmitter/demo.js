@@ -15,7 +15,7 @@ const Com1 = () => {
 };
 
 export default () => {
-  const [bool, toggle] = useToggle();
+  const [bool, { toggle }] = useToggle();
   return (
     <div>
       <h1>useUnmount</h1>

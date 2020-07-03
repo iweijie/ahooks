@@ -24,8 +24,8 @@ const useToggle = (defaultValue = false, reverseValue) => {
   });
   return [
     value,
-    toggle,
     {
+      toggle,
       setLeft,
       setRight,
     },
