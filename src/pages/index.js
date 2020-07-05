@@ -12,14 +12,26 @@ import styles from './index.less';
 // import Demo from '../hooks/useUpdate/demo';
 // import Demo from '../hooks/useSetState/demo';
 // import Demo from '../hooks/useDebounce/demo';
-import Demo from '../hooks/useDebounceEffect/demo';
+// import Demo from '../hooks/useDebounceEffect/demo';
+// import { Demo1, Demo2, Demo3 } from '../hooks/useControllableValue/demo';
+// import Demo from '../hooks/useCounter/demo';
+// import Demo from '../hooks/useStorageState/demo';
+// import Demo1 from '../hooks/useLocalStorageState/demo/1';
+// import Demo2 from '../hooks/useLocalStorageState/demo/2';
+// import Demo3 from '../hooks/useLocalStorageState/demo/3';
 
+import Demo1 from '../hooks/useSessionStorageState/demo/1';
+import Demo2 from '../hooks/useSessionStorageState/demo/2';
+import Demo3 from '../hooks/useSessionStorageState/demo/3';
 
 export default () => {
   return (
     <div>
       <h1 className={styles.title}>Page index</h1>
-      <Demo />
+      {/* <Demo /> */}
+      <Demo1 />
+      <Demo2 />
+      <Demo3 />
     </div>
   );
 };
