@@ -29,9 +29,6 @@ export default () => {
     <div>
       <h1 className={styles.title}>Page index</h1>
       {/* <Demo /> */}
-      <Demo1 />
-      <Demo2 />
-      <Demo3 />
     </div>
   );
 };
