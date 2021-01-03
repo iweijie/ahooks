@@ -2,6 +2,9 @@ import FSM from './parser';
 import { cloneDeep, isEmpty, get } from 'lodash';
 import { unescape } from './tool';
 
+const startStr = '<span data-custom-underline="true">';
+const endStr = '</span>';
+
 const getElementHTML = item => {
   const {
     type,
@@ -11,7 +14,6 @@ const getElementHTML = item => {
     parent,
     attributes,
     children,
-    customSplitAttr,
   } = item;
   if (type === 'element') {
     const attrStr = attributes
@@ -21,8 +23,7 @@ const getElementHTML = item => {
       })
       .join(' ');
     const child = getAstToHTML(children);
-    const customSplit = customSplitAttr ? 'data-custom-split="true"' : '';
-    return `<${tagName} ${attrStr} ${customSplit}>${child}</${tagName}>`;
+    return `<${tagName} ${attrStr}>${child}</${tagName}>`;
   } else if (type === 'text') {
     return content;
   }
@@ -39,10 +40,15 @@ const getAstToHTML = ast => {
 };
 
 const translateAstNodes = ({ ast, list = [] }) => {
-  return list.map(item => {
+  // TODO 数据合并
+
+  const translateNodeList = [];
+
+  list.forEach(item => {
     const { level, start, end } = item;
     let { text } = item;
     const node = level.reduce((ast, path) => {
+      if (ast.isCustom) return ast;
       return get(ast, path) || get(ast.children, path) || ast;
     }, ast);
 
@@ -57,46 +63,64 @@ const translateAstNodes = ({ ast, list = [] }) => {
 
     if (!parentNode) return;
 
-    if (!parentNode.customSplitAttr) {
-      parentNode.customSplitAttr = true;
-    }
-
-    const [s, e] = content.split(text);
-
-    const newChildren = [];
-
-    if (s) {
-      newChildren.push({ type, content: s });
-    }
-
-    const cNode = {
-      attributes: [
-        {
-          name: 'data-custom-underline',
-          value: 'true',
+    let cNode = node;
+    if (!node.isCustom) {
+      cNode = {
+        attributes: [
+          {
+            name: 'data-custom-split',
+            value: 'true',
+          },
+        ],
+        isCustom: true,
+        custom: {
+          list: [item],
+          node,
         },
-      ],
-      children: [],
-      class: '_custom-underline',
-      tagName: 'span',
-      type: 'element',
-    };
-    cNode.children.push({
-      content: text,
-      type: 'text',
-    });
-
-    newChildren.push(cNode);
-
-    if (e) {
-      newChildren.push({ type, content: e });
+        children: [],
+        class: '_custom-underline',
+        tagName: 'span',
+        type: 'element',
+      };
+      translateNodeList.push(cNode);
+    } else {
+      cNode.custom.list.push(item);
     }
 
     const index = parentNode.children.findIndex(item => item === node);
 
     if (index !== -1) {
-      parentNode.children.splice(index, 1, ...newChildren);
+      parentNode.children.splice(index, 1, cNode);
     }
+  });
+
+  translateNodeList.forEach(item => {
+    const { list, node } = item.custom;
+    const content = unescape(node.content);
+    const newContext = list
+      .reduce((list, d) => {
+        const { start, end, text } = d;
+        const comparisonText = content.slice(start, end);
+        if (comparisonText !== text) return list;
+        // end: 103
+        // level: (3) [0, 1, 0]
+        // start: 27
+        list.push({ type: 'start', i: start }, { type: 'end', i: end });
+        return list;
+      }, [])
+      .sort((a, b) => b.i - a.i)
+      .reduce((text, item) => {
+        const { type, i } = item;
+        const insertStr = type === 'start' ? startStr : endStr;
+        return `${text.slice(0, i)}${insertStr}${text.slice(i)}`;
+      }, content);
+
+    console.log('newContext', newContext);
+
+    item.children.push({
+      content: newContext,
+      type: 'text',
+    });
   });
 };
 

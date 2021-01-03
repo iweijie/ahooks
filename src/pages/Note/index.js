@@ -34,14 +34,13 @@ const getAllContainerNodeLevel = ({ range, noteContainer }) => {
 
   const topLevel = handleGetLevel(commonAncestorContainer, noteContainer);
   const isSameNode = startContainer === endContainer;
-  let node = startContainer;
-  // isSameNode
-  //   ? commonAncestorContainer
-  //   : commonAncestorContainer.childNodes[0];
+  let node = isSameNode
+    ? commonAncestorContainer
+    : commonAncestorContainer.childNodes[0];
   let isStart = false;
   let isEnd = false;
   let list = [];
-  while (node && !isEnd) {
+  outer: while (node && !isEnd) {
     if (node === startContainer) {
       isStart = true;
     }
@@ -49,7 +48,12 @@ const getAllContainerNodeLevel = ({ range, noteContainer }) => {
     if (node === endContainer) {
       isEnd = true;
     }
+    console.log('node', node);
 
+    // 所有分割文本上都多嵌套了一层 span ，添加自定义属性 data-custom-split
+    // 文本节点木有获取属性
+    const isCustom =
+      node.getAttribute && node.getAttribute('data-custom-split');
     // 只标记文本节点
     if (isStart && node.nodeType === 3) {
       const level = handleGetLevel(node, commonAncestorContainer);
@@ -71,20 +75,23 @@ const getAllContainerNodeLevel = ({ range, noteContainer }) => {
         end: textEndOffset,
         text: node.textContent.slice(textStartOffset, textEndOffset),
       });
+    } else if (isStart && isCustom) {
+      // TODO 综合当前节点选中文本 ， 待完善
     }
 
-    if (node.childNodes.length) {
+    // 自定义节点为最底层的文本节点，无法在分割
+    if (node.childNodes.length && !isCustom) {
       node = node.childNodes[0];
     } else if (node.nextSibling) {
       node = node.nextSibling;
     } else {
       do {
-        if (!node.parentNode) {
-          console.log(list);
-          debugger;
+        node = node.parentNode;
+        if (noteContainer === node) {
+          break outer;
         }
-        node = node.parentNode.nextSibling;
-      } while (!node);
+      } while (!node.nextSibling);
+      node = node.nextSibling;
     }
   }
 
