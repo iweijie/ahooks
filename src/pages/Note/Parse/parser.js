@@ -1,17 +1,16 @@
-import { v4 as uuidv4 } from 'uuid';
 const EOF = Symbol('EOF');
 let currentToken = null;
+let currentAttribute = null;
 let currentTextNode = null;
+
 let stack = [{ type: 'document', children: [] }];
-let rules = [];
-let currentAttribute = {};
 
 function emit(token) {
   let top = stack[stack.length - 1];
+
   if (token.type === 'startTag') {
     let element = {
       type: 'element',
-      uuid: uuidv4(),
       children: [],
       attributes: [],
     };
@@ -31,8 +30,6 @@ function emit(token) {
       }
     }
 
-    // computedCss(element);
-
     top.children.push(element);
     element.parent = top;
 
@@ -43,12 +40,8 @@ function emit(token) {
     currentTextNode = null;
   } else if (token.type === 'endTag') {
     if (top.tagName !== token.tagName) {
-      throw new Error('语法错误');
+      throw new Error(`Tag start end doesn't match!`);
     } else {
-      // if (top.tagName === "style") {
-      //   addCssRules(top.children[0].content);
-      // }
-      // layout(top);
       stack.pop();
     }
     currentTextNode = null;
@@ -56,6 +49,7 @@ function emit(token) {
     if (currentTextNode === null) {
       currentTextNode = {
         type: 'text',
+        parent: top,
         content: '',
       };
       top.children.push(currentTextNode);
@@ -90,8 +84,8 @@ function tagOpen(c) {
       tagName: '',
     };
     return tagName(c);
-  } else if (c === EOF) {
   } else {
+    return;
   }
 }
 
@@ -126,32 +120,11 @@ function endTagOpen(c) {
 function beforeAttributeName(c) {
   if (c.match(/^[\t\n\f ]$/)) {
     return beforeAttributeName;
-  } else if (c === '>' || c === '>' || c === EOF) {
+  } else if (c === '/' || c === '>' || c === EOF) {
     return afterAttributeName(c);
   } else if (c === '=') {
+    // return beforeAttributeName
   } else {
-    currentAttribute = {
-      name: '',
-      value: '',
-    };
-    return attributeName(c);
-  }
-}
-
-function afterAttributeName(c) {
-  if (c.match(/^\s$/)) {
-    return afterAttributeName;
-  } else if (c === '/') {
-    return selfClosingStartTag;
-  } else if (c === '=') {
-    return beforeAttributeValue;
-  } else if (c === '>') {
-    currentToken[currentAttribute.name] = currentAttribute.value;
-    emit(currentToken);
-    return data;
-  } else if (c === EOF) {
-  } else {
-    currentToken[currentAttribute.name] = currentAttribute.value;
     currentAttribute = {
       name: '',
       value: '',
@@ -182,7 +155,7 @@ function beforeAttributeValue(c) {
     return singleQuotedAttributeValue;
   } else if (c === '>') {
   } else {
-    return unqoutedAttributeValue(c);
+    return unQuotedAttributeValue(c);
   }
 }
 
@@ -210,26 +183,6 @@ function singleQuotedAttributeValue(c) {
   }
 }
 
-function unqoutedAttributeValue(c) {
-  if (c.match(/^[\t\n\f ]$/)) {
-    currentToken[currentAttribute.name] = currentAttribute.value;
-    return beforeAttributeName;
-  } else if (c === '/') {
-    currentToken[currentAttribute.name] = currentAttribute.value;
-    return selfClosingStartTag;
-  } else if (c === '>') {
-    currentToken[currentAttribute.name] = currentAttribute.value;
-    emit(currentToken);
-    return data;
-  } else if (c === "'" || c === '"' || c === '<' || c === '=' || c === '`') {
-  } else if (c === '\u0000') {
-  } else if (c === EOF) {
-  } else {
-    currentAttribute.value += c;
-    return unqoutedAttributeValue;
-  }
-}
-
 function afterQuotedAttributeValue(c) {
   if (c.match(/^[\t\n\f ]$/)) {
     return beforeAttributeName;
@@ -241,17 +194,64 @@ function afterQuotedAttributeValue(c) {
     return data;
   } else if (c === EOF) {
   } else {
+    // 可以抛错 这里对应<div class="a"b>这种情况
+    throw new Error('afterQuotedAttributeValue error');
+    // currentAttribute.value += c
+    // return afterQuotedAttributeValue
+  }
+}
+
+function unQuotedAttributeValue(c) {
+  if (c.match(/^[\t\n\f ]$/)) {
+    currentToken[currentAttribute.name] = currentAttribute.value;
+    return beforeAttributeName;
+  } else if (c === '/') {
+    // 这里可以处理 <img id=b/>这种情况
+    currentToken[currentAttribute.name] = currentAttribute.value;
+    return selfClosingStartTag;
+  } else if (c === '>') {
+    currentToken[currentAttribute.name] = currentAttribute.value;
+    emit(currentToken);
+    return data;
+  } else if (c === '\u0000') {
+  } else if (c === '"' || c === "'" || c === '<' || c === '=' || c === '`') {
+  } else if (c === EOF) {
+  } else {
     currentAttribute.value += c;
-    return doubleQuotedAttributeValue;
+    return unQuotedAttributeValue;
   }
 }
 
 function selfClosingStartTag(c) {
   if (c === '>') {
-    currentToken.isSlefClosing = true;
+    currentToken.isSelfClosing = true;
+    emit(currentToken);
     return data;
   } else if (c === EOF) {
   } else {
+  }
+}
+
+function afterAttributeName(c) {
+  if (c.match(/^[\t\n\f ]$/)) {
+    return afterAttributeName;
+  } else if (c === '/') {
+    return selfClosingStartTag;
+  } else if (c === '=') {
+    return beforeAttributeValue;
+  } else if (c === '>') {
+    currentToken[currentAttribute.name] = currentAttribute.value;
+    emit(currentToken);
+    return data;
+  } else if (c === EOF) {
+  } else {
+    // 理论上这条分支是多余的，从beforeAttributeName或者attributeName状态进入时c已经确定了
+    // currentToken[currentAttribute.name] = currentAttribute.value
+    currentAttribute = {
+      name: '',
+      value: '',
+    };
+    return attributeName(c);
   }
 }
 
@@ -265,7 +265,6 @@ export default function parserHTML(html) {
   const children = stack[0].children;
 
   stack = [{ type: 'document', children: [] }];
-  rules = [];
   currentAttribute = {};
 
   return children.map(item => {
