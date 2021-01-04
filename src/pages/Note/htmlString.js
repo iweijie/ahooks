@@ -1,5 +1,10 @@
 export default `
 <div class="RichContent-inner RichContent-inner--collapsed">
+<p>0123456789</p>
+</div>`;
+
+`
+<div class="RichContent-inner RichContent-inner--collapsed">
 <p>
     all 方法当 所有值 resolve 时， Promise 实例才会resolve，
     返回值为数组，并一一对应传入顺序，如一个reject

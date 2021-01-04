@@ -1,8 +1,7 @@
 import FSM from './parser';
 import { cloneDeep, isEmpty, get } from 'lodash';
-import { unescape } from './tool';
+import { unescape, resolveIntersection } from './tool';
 
-const startStr = '<span data-custom-underline="true">';
 const endStr = '</span>';
 
 const getElementHTML = item => {
@@ -52,66 +51,89 @@ const translateAstNodes = ({ ast, list = [] }) => {
       return get(ast, path) || get(ast.children, path) || ast;
     }, ast);
 
-    let { type, content } = node;
+    let { type, content, attributes } = node;
+
+    // name: "data-custom-split"
 
     // 字符转义后路径对应问题
-    content = unescape(content);
 
-    if (type !== 'text' || !text || !text.trim()) return;
+    if (
+      type === 'text' ||
+      (type === 'element' &&
+        attributes.find(item => item.name === 'data-custom-split'))
+    ) {
+      const parentNode = node.parent;
 
-    const parentNode = node.parent;
+      if (!parentNode) return;
 
-    if (!parentNode) return;
-
-    let cNode = node;
-    if (!node.isCustom) {
-      cNode = {
-        attributes: [
-          {
-            name: 'data-custom-split',
-            value: 'true',
+      let cNode = node;
+      if (!node.isCustom) {
+        cNode = {
+          attributes: [
+            {
+              name: 'data-custom-split',
+              value: 'true',
+            },
+          ],
+          isCustom: true,
+          custom: {
+            list: [item],
+            node,
           },
-        ],
-        isCustom: true,
-        custom: {
-          list: [item],
-          node,
-        },
-        children: [],
-        class: '_custom-underline',
-        tagName: 'span',
-        type: 'element',
-      };
-      translateNodeList.push(cNode);
-    } else {
-      cNode.custom.list.push(item);
-    }
+          children: [],
+          parent: node.parent,
+          class: '_custom-underline',
+          tagName: 'span',
+          type: 'element',
+        };
 
-    const index = parentNode.children.findIndex(item => item === node);
+        translateNodeList.push(cNode);
 
-    if (index !== -1) {
-      parentNode.children.splice(index, 1, cNode);
+        const index = parentNode.children.findIndex(item => item === node);
+
+        if (index !== -1) {
+          parentNode.children.splice(index, 1, cNode);
+        }
+      } else {
+        cNode.custom.list.push(item);
+      }
     }
   });
 
   translateNodeList.forEach(item => {
     const { list, node } = item.custom;
     const content = unescape(node.content);
-    const newContext = list
+    const intersection = list.reduce((list, d) => {
+      const { start, end, text, uuid } = d;
+      const comparisonText = content.slice(start, end);
+      if (comparisonText !== text) return list;
+      list.push({ uuid, start, end });
+      return list;
+    }, []);
+
+    const newContext = resolveIntersection(intersection, content)
       .reduce((list, d) => {
-        const { start, end, text } = d;
-        const comparisonText = content.slice(start, end);
-        if (comparisonText !== text) return list;
-        // end: 103
-        // level: (3) [0, 1, 0]
-        // start: 27
-        list.push({ type: 'start', i: start }, { type: 'end', i: end });
+        const { start, end, uuid } = d;
+        list.push(
+          { type: 'end', uuid, i: end },
+          { type: 'start', uuid, i: start },
+        );
         return list;
       }, [])
-      .sort((a, b) => b.i - a.i)
+      .sort((a, b) => {
+        if (b.i === a.i) {
+          if (b.type === a.type) return 0;
+          if (b.type === 'start') return 1;
+          if (a.type === 'start') return -1;
+        }
+        return b.i - a.i;
+      })
       .reduce((text, item) => {
-        const { type, i } = item;
-        const insertStr = type === 'start' ? startStr : endStr;
+        const { type, i, uuid } = item;
+        const insertStr =
+          type === 'start'
+            ? `<span data-custom-underline="true" data-custom-uuid="${uuid}">`
+            : endStr;
         return `${text.slice(0, i)}${insertStr}${text.slice(i)}`;
       }, content);
 

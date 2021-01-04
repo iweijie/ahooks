@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import styles from './index.less';
 
 // import Demo from '../hooks/usePersistFn/demo';
@@ -23,12 +23,25 @@ import styles from './index.less';
 import Demo1 from '../hooks/useSessionStorageState/demo/1';
 import Demo2 from '../hooks/useSessionStorageState/demo/2';
 import Demo3 from '../hooks/useSessionStorageState/demo/3';
+import Note from './Note/index';
+import htmlString from './Note/htmlString';
 
 export default () => {
+  const [list, setList] = useState([]);
+  const onChange = useCallback(
+    list => {
+      console.log(list);
+      setList(l => {
+        return [...l, ...list];
+      });
+    },
+    [setList],
+  );
   return (
     <div>
-      <h1 className={styles.title}>Page index</h1>
-      {/* <Demo /> */}
+      <h1 className={styles.title}>Page header</h1>
+      <Note onChange={onChange} value={list} template={htmlString} />
+      <footer className={styles.title}>Page footer</footer>
     </div>
   );
 };
