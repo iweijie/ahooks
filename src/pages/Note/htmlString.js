@@ -1,7 +1,9 @@
 export default `
-<div class="RichContent-inner RichContent-inner--collapsed">
-<p>0123456789</p>
-</div>`;
+<pre><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Handler</span>(<span class="hljs-params">onFulfilled, onRejected, promise</span>) </span>{
+  <span class="hljs-keyword">this</span>.onFulfilled = <span class="hljs-keyword">typeof</span> onFulfilled === <span class="hljs-string">'function'</span> ? onFulfilled : <span class="hljs-literal">null</span>
+  <span class="hljs-keyword">this</span>.onRejected = <span class="hljs-keyword">typeof</span> onRejected === <span class="hljs-string">'function'</span> ? onRejected : <span class="hljs-literal">null</span>
+  <span class="hljs-keyword">this</span>.promise = promise
+  }</code></pre>`;
 
 `
 <div class="RichContent-inner RichContent-inner--collapsed">

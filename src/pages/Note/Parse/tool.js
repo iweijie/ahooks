@@ -18,7 +18,7 @@ export const resolveIntersection = function(list, content) {
   let joinList = [];
   let startOffset = 0;
   const intersection = [];
-  for (let i = 0; i < content.length; i++) {
+  for (let i = 0; i <= content.length; i++) {
     list.forEach(e => {
       const { start, end, uuid } = e;
       if (start === i) {
@@ -26,13 +26,15 @@ export const resolveIntersection = function(list, content) {
           startOffset = start;
           joinList.push(uuid);
         } else {
-          joinList.forEach(id => {
-            intersection.push({
-              uuid: id,
-              start: startOffset,
-              end: i,
+          if (startOffset < i) {
+            joinList.forEach(id => {
+              intersection.push({
+                uuid: id,
+                start: startOffset,
+                end: i,
+              });
             });
-          });
+          }
           startOffset = i;
           joinList.push(uuid);
         }
@@ -43,13 +45,15 @@ export const resolveIntersection = function(list, content) {
           return;
         }
 
-        joinList.forEach(id => {
-          intersection.push({
-            uuid: id,
-            start: startOffset,
-            end: i,
+        if (startOffset < i) {
+          joinList.forEach(id => {
+            intersection.push({
+              uuid: id,
+              start: startOffset,
+              end: i,
+            });
           });
-        });
+        }
         startOffset = i;
 
         joinList.splice(index, 1);

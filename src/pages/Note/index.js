@@ -69,7 +69,7 @@ const parseCustomSplitNode = ({ node, isStart = false, range }) => {
       if (s === startContainer) {
         offset += startOffset;
       } else {
-        offset += s.textContent.length;
+        offset += s?.textContent?.length || 0;
       }
 
       if (s.previousSibling) {
@@ -96,7 +96,7 @@ const parseCustomSplitNode = ({ node, isStart = false, range }) => {
       if (s === endContainer) {
         offset += endOffset;
       } else {
-        offset += s.textContent.length;
+        offset += s?.textContent?.length || 0;
       }
 
       if (s.previousSibling) {

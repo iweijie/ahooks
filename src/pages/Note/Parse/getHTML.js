@@ -40,7 +40,6 @@ const getAstToHTML = ast => {
 
 const translateAstNodes = ({ ast, list = [] }) => {
   // TODO 数据合并
-
   const translateNodeList = [];
 
   list.forEach(item => {
