@@ -217,7 +217,9 @@ const getAllContainerNodeLevel = ({ range, noteContainer }) => {
     }
   }
 
-  return list;
+  return list.filter(item => {
+    return item.text && item.text.trim();
+  });
 };
 
 const Note = ({ template, value, onChange }) => {
