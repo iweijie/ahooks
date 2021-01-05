@@ -63,25 +63,25 @@ const parseCustomSplitNode = ({ node, isStart = false, range }) => {
     info.start = 0;
   } else if (node.contains(startContainer)) {
     info.isStart = true;
-    let s = startContainer;
+    let startNode = startContainer;
     let offset = 0;
-    outer: while (s && s !== node) {
-      if (s === startContainer) {
+    outer: while (startNode && startNode !== node) {
+      if (startNode === startContainer) {
         offset += startOffset;
       } else {
-        offset += s?.textContent?.length || 0;
+        offset += startNode?.textContent?.length || 0;
       }
 
-      if (s.previousSibling) {
-        s = s.previousSibling;
+      if (startNode.previousSibling) {
+        startNode = startNode.previousSibling;
       } else {
         do {
-          s = s.parentNode;
-          if (node === s) {
+          startNode = startNode.parentNode;
+          if (node === startNode) {
             break outer;
           }
-        } while (!s.previousSibling);
-        s = s.previousSibling;
+        } while (!startNode.previousSibling);
+        startNode = startNode.previousSibling;
       }
     }
 
@@ -90,25 +90,27 @@ const parseCustomSplitNode = ({ node, isStart = false, range }) => {
 
   if (node.contains(endContainer)) {
     info.isEnd = true;
-    let s = endContainer;
+    let endNode = endContainer;
+
+    console.log('iweijie', endNode);
     let offset = 0;
-    while (s && s !== node) {
-      if (s === endContainer) {
+    outer: while (endNode && endNode !== node) {
+      if (endNode === endContainer) {
         offset += endOffset;
       } else {
-        offset += s?.textContent?.length || 0;
+        offset += endNode?.textContent?.length || 0;
       }
 
-      if (s.previousSibling) {
-        s = s.previousSibling;
+      if (endNode.previousSibling) {
+        endNode = endNode.previousSibling;
       } else {
         do {
-          s = s.parentNode;
-          if (node === s) {
-            break;
+          endNode = endNode.parentNode;
+          if (node === endNode) {
+            break outer;
           }
-        } while (!s.previousSibling);
-        s = s.previousSibling;
+        } while (!endNode.previousSibling);
+        endNode = endNode.previousSibling;
       }
     }
     info.end = offset;
@@ -117,70 +119,7 @@ const parseCustomSplitNode = ({ node, isStart = false, range }) => {
     info.end = node.textContent.length;
   }
 
-  // const childNodes = Array.prototype.slice.apply(node.childNodes);
-  // const nodeListInfo = [];
-
-  // for (let i = 0; i < childNodes.length; i++) {
-  //   if (flagEnd) break;
-
-  //   const n = childNodes[i];
-  //   const d = {
-  //     text: n.textContent,
-  //     length: n.textContent.length,
-  //     startOffset: 0,
-  //     endOffset: 0,
-  //     isStart: false,
-  //     isEnd: false,
-  //   };
-
-  //   if (n === startContainer) {
-  //     isStart = true;
-  //     d.startOffset = startOffset;
-  //   }
-  //   if (n === endContainer) {
-  //     isEnd = true;
-  //     flagEnd = true;
-  //     d.endOffset = endOffset;
-  //   }
-
-  //   d.isStart = isStart;
-  //   d.isEnd = isEnd;
-
-  //   nodeListInfo.push(d);
-  // }
-
   return info;
-  // if (!info.isStart) {
-  //   return info;
-  // }
-
-  // nodeListInfo.reduce(
-  //   (info, item) => {
-  //     const { startOffset, endOffset, isStart, isEnd, length } = item;
-  //     let { text: context } = item;
-  //     if (endOffset) {
-  //       context = 1;
-  //     } else {
-  //     }
-
-  //     return num + 1;
-  //   },
-  //   { star: 0, end: 0, text: '' },
-  // );
-
-  /**
-   * Text 选中的文本节点
-   * CNode： 自定义分割节点
-   */
-
-  // if (isStart) {
-  //   if (info.isEnd) {
-  //     //  关系：<Text><CNode></Text></CNode>
-  //   } else {
-  //     //  关系：<Text><CNode></CNode></Text>
-  //   }
-  // }
-  // return info;
 };
 
 const getAllContainerNodeLevel = ({ range, noteContainer }) => {
@@ -281,9 +220,10 @@ const getAllContainerNodeLevel = ({ range, noteContainer }) => {
   return list;
 };
 
-const Note = ({ temp, value, onChange }) => {
+const Note = ({ template, value, onChange }) => {
+  console.log('....value', value);
   const parse = useMemo(() => {
-    return new Parse({ template: htmlStr || temp });
+    return new Parse({ template: template || '' });
   }, []);
 
   const [snapShoot, setSnapShoot] = useState(() => {
@@ -313,10 +253,8 @@ const Note = ({ temp, value, onChange }) => {
             range,
             noteContainer: noteContainer.current,
           });
-          console.log('list', list);
+          console.log('value----', list);
           onChange && onChange(list);
-
-          // setSnapShoot({ __html: state.getHTML(list) });
         },
         {
           once: true,
@@ -326,12 +264,15 @@ const Note = ({ temp, value, onChange }) => {
     [noteContainer, parse],
   );
 
+  const handleClick = useCallback(() => {}, []);
+
   useEffect(() => {
     setSnapShoot({ __html: parse.getHTML(value) });
   }, [setSnapShoot, parse, value]);
 
   return (
     <div
+      onClick={handleClick}
       className={styles.note}
       ref={noteContainer}
       onMouseDown={handleMouseDown}

@@ -40,6 +40,7 @@ const getAstToHTML = ast => {
 
 const translateAstNodes = ({ ast, list = [] }) => {
   // TODO 数据合并
+
   const translateNodeList = [];
 
   list.forEach(item => {
@@ -135,8 +136,6 @@ const translateAstNodes = ({ ast, list = [] }) => {
             : endStr;
         return `${text.slice(0, i)}${insertStr}${text.slice(i)}`;
       }, content);
-
-    console.log('newContext', newContext);
 
     item.children.push({
       content: newContext,

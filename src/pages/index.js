@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, Profiler } from 'react';
 import styles from './index.less';
 
 // import Demo from '../hooks/usePersistFn/demo';
@@ -24,7 +24,19 @@ import Demo1 from '../hooks/useSessionStorageState/demo/1';
 import Demo2 from '../hooks/useSessionStorageState/demo/2';
 import Demo3 from '../hooks/useSessionStorageState/demo/3';
 import Note from './Note/index';
-import htmlString from './Note/htmlString';
+import htmlString from './htmlString';
+
+function onRenderCallback(
+  id, // 发生提交的 Profiler 树的 “id”
+  phase, // "mount" （如果组件树刚加载） 或者 "update" （如果它重渲染了）之一
+  actualDuration, // 本次更新 committed 花费的渲染时间
+  baseDuration, // 估计不使用 memoization 的情况下渲染整颗子树需要的时间
+  startTime, // 本次更新中 React 开始渲染的时间
+  commitTime, // 本次更新中 React committed 的时间
+  interactions, // 属于本次更新的 interactions 的集合
+) {
+  // 合计或记录渲染时间。。。
+}
 
 export default () => {
   const [list, setList] = useState([]);
@@ -39,9 +51,13 @@ export default () => {
   );
   return (
     <div>
-      <h1 className={styles.title}>Page header</h1>
-      <Note onChange={onChange} value={list} template={htmlString} />
-      <footer className={styles.title}>Page footer</footer>
+      {/* Page header */}
+      <h1 className={styles.title}> </h1>
+      <Profiler id="Note" onRender={onRenderCallback}>
+        <Note onChange={onChange} value={list} template={htmlString} />
+      </Profiler>
+      <footer className={styles.title}> </footer>
+      {/* Page footer */}
     </div>
   );
 };
