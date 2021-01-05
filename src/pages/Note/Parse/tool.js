@@ -14,7 +14,6 @@ export function unescape(str) {
 // 获取交集
 export const resolveIntersection = function(list, content) {
   if (!list || !list.length) return [];
-
   let joinList = [];
   let startOffset = 0;
   const intersection = [];

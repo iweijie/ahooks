@@ -1,505 +1,79 @@
-export default `
-<div class="article-detail-content">
-<h2 id="md-wj-1">Promise的状态</h2>
-<ol>
-    <li>
-        promise操作只会在以下3种状态中的一种：等待态（Pending）、执行态（Fulfilled）和拒绝态（Rejected）
-    </li>
-    <li>
-        promise的状态只会出现从等待状态向执行态或者拒绝态转化，不可以逆转。执行态和拒绝态之间不能相互转换
-    </li>
-    <li>promise状态一旦被转换，就不能被更改。</li>
-</ol>
-<h2 id="md-wj-2">Promise流程图了解下(*￣︶￣)</h2>
-<p>
-    <img
-        src="https://mdn.mozillademos.org/files/8633/promises.png"
-        alt="Alt text"
-        title="Promise 流程图"
-    />
-</p>
-<h2 id="md-wj-3">例 一</h2>
-<pre><code><span class="hljs-keyword">var</span> test = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">reslove, reject</span>) </span>{
-reslove(<span class="hljs-string">"test"</span>)
-<span class="hljs-comment">// or</span>
-setTimeout(reslove, <span class="hljs-number">2000</span>, <span class="hljs-string">"test"</span>)
-<span class="hljs-comment">// or</span>
-resolve(<span class="hljs-built_in">Promise</span>.resolve(<span class="hljs-string">"test"</span>))
-})</code></pre>
-<p>主入口函数为：</p>
-<pre><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Promise</span>(<span class="hljs-params">fn</span>) </span>{
-<span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> <span class="hljs-keyword">this</span> !== <span class="hljs-string">'object'</span>) {
-    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">TypeError</span>(<span class="hljs-string">'Promises must be constructed via new'</span>)
-}
-<span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> fn !== <span class="hljs-string">'function'</span>) {
-    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">TypeError</span>(<span class="hljs-string">"Promise constructor's argument is not a function"</span>)
-}
-<span class="hljs-comment">// _deferredState == 1 表示 _deferreds 为单个；</span>
-<span class="hljs-comment">// _deferredState == 2 表示 _deferreds 为数组；</span>
-<span class="hljs-keyword">this</span>._deferredState = <span class="hljs-number">0</span>
-<span class="hljs-comment">// 状态值</span>
-<span class="hljs-comment">// 0 - pending</span>
-<span class="hljs-comment">// 1 - fulfilled with _value</span>
-<span class="hljs-comment">// 2 - rejected with _value</span>
-<span class="hljs-comment">// 3 - adopted the state of another promise, _value</span>
-<span class="hljs-keyword">this</span>._state = <span class="hljs-number">0</span>
-<span class="hljs-comment">// 返回结果</span>
-<span class="hljs-keyword">this</span>._value = <span class="hljs-literal">null</span>
-<span class="hljs-comment">// 用于挂载 Handler 实例；也就是 then 方法中传递的 resolve ， reject方法，以及新的primose实例的引用</span>
-<span class="hljs-keyword">this</span>._deferreds = <span class="hljs-literal">null</span>
-<span class="hljs-keyword">if</span> (fn === noop) <span class="hljs-keyword">return</span>
- <span class="hljs-comment">// 分解函数</span>
-doResolve(fn, <span class="hljs-keyword">this</span>)
-}</code></pre>
-<p>
-    Promise 为构造函数，传入的函数会被doResolve函数注入
-    reslove和reject 参数
-</p>
-<pre><code><span class="hljs-comment">// to avoid using try/catch inside critical functions, we</span>
-<span class="hljs-comment">// extract them to here.</span>
-<span class="hljs-keyword">var</span> LAST_ERROR = <span class="hljs-literal">null</span>
-<span class="hljs-keyword">var</span> IS_ERROR = {}
+export default `<p>对于前端开发来说，我们平时与浏览器打交道的时间是最多的。可浏览器对前端同学来说更多像一个神秘黑盒子的存在。我们仅仅知道它能做什么，而不知道它是如何做到的。</p><p>在我面试和接触过的前端开发者中，70%的前端同学对这部分的知识内容只能达到“一知半解”的程度。甚至还有一部分同学会质疑这部分知识是否重要：这与我们的工作相关吗，学多了会不会偏移前端工作的方向？</p><p>事实上，我们这里所需要了解的浏览器工作原理只是它的大致过程，这部分浏览器工作原理不但是前端面试的常考知识点，它还会辅助你的实际工作，学习浏览器的内部工作原理和个中缘由，对于我们做性能优化、排查错误都有很大的好处。</p><p>在我们的课程中，我也会控制浏览器相关知识的粒度，把它保持在“给前端工程师了解浏览器”的水准，而不是详细到“给浏览器开发工程师实现浏览器”的水准。</p><p>那么，我们今天开始，来共同思考一下。一个浏览器到底是如何工作的。</p><p>实际上，对浏览器的实现者来说，他们做的事情，就是把一个URL变成一个屏幕上显示的网页。</p><p>这个过程是这样的：</p><ol>
+<li>浏览器首先使用HTTP协议或者HTTPS协议，向服务端请求页面；</li>
+<li>把请求回来的HTML代码经过解析，构建成DOM树；</li>
+<li>计算DOM树上的CSS属性；</li>
+<li>最后根据CSS属性对元素逐个进行渲染，得到内存中的位图；</li>
+<li>一个可选的步骤是对位图进行合成，这会极大地增加后续绘制的速度；</li>
+<li>合成之后，再绘制到界面上。</li>
+</ol><!-- [[[read_end]]] --><p><img src="https://static001.geekbang.org/resource/image/63/4c/6391573a276c47a9a50ae0cbd2c5844c.jpg" alt="" /></p><p>我们在开始详细介绍之前，要建立一个感性认识。我们从HTTP请求回来开始，这个过程并非一般想象中的一步做完再做下一步，而是一条流水线。</p><p>从HTTP请求回来，就产生了流式的数据，后续的DOM树构建、CSS计算、渲染、合成、绘制，都是尽可能地流式处理前一步的产出：即不需要等到上一步骤完全结束，就开始处理上一步的输出，这样我们在浏览网页时，才会看到逐步出现的页面。</p><p>首先我们来介绍下网络通讯的部分。</p><h2>HTTP协议</h2><p>浏览器首先要做的事就是根据URL把数据取回来，取回数据使用的是HTTP协议，实际上这个过程之前还有DNS查询，不过这里就不详细展开了。</p><p>我先来了解下HTTP的标准。</p><p>HTTP标准由IETF组织制定，跟它相关的标准主要有两份：</p><ul>
+<li>
+<p>HTTP1.1 <a href="https://tools.ietf.org/html/rfc2616">https://tools.ietf.org/html/rfc2616</a></p>
+</li>
+<li>
+<p>HTTP1.1 <a href="https://tools.ietf.org/html/rfc7234">https://tools.ietf.org/html/rfc7234</a></p>
+</li>
+</ul><p>HTTP协议是基于TCP协议出现的，对TCP协议来说，TCP协议是一条双向的通讯通道，HTTP在TCP的基础上，规定了Request-Response的模式。这个模式决定了通讯必定是由浏览器端首先发起的。</p><p>大部分情况下，浏览器的实现者只需要用一个TCP库，甚至一个现成的HTTP库就可以搞定浏览器的网络通讯部分。HTTP是纯粹的文本协议，它是规定了使用TCP协议来传输文本格式的一个应用层协议。</p><p>下面，我们试着用一个纯粹的TCP客户端来手工实现HTTP一下：</p><h2>实验</h2><p>我们的实验需要使用telnet客户端，这个客户端是一个纯粹的TCP连接工具（安装方法）。</p><p>首先我们运行telnet，连接到极客时间主机，在命令行里输入以下内容：</p><pre><code>telnet time.geekbang.org 80
+</code></pre><p>这个时候，TCP连接已经建立，我们输入以下字符作为请求：</p><pre><code>GET / HTTP/1.1
+Host: time.geekbang.org
+</code></pre><p>按下两次回车，我们收到了服务端的回复：</p><pre><code>HTTP/1.1 301 Moved Permanently
+Date: Fri, 25 Jan 2019 13:28:12 GMT
+Content-Type: text/html
+Content-Length: 182
+Connection: keep-alive
+Location: https://time.geekbang.org/
+Strict-Transport-Security: max-age=15768000
 
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">doResolve</span>(<span class="hljs-params">fn, promise</span>) </span>{
-<span class="hljs-comment">// 锁</span>
-<span class="hljs-keyword">var</span> done = <span class="hljs-literal">false</span>
-<span class="hljs-keyword">var</span> res = tryCallTwo(fn,
-        <span class="hljs-comment">// resolve 回调</span>
-        <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">value</span>) </span>{
-            <span class="hljs-keyword">if</span> (done) <span class="hljs-keyword">return</span>
-            done = <span class="hljs-literal">true</span>
-            resolve(promise, value)
-        },
-        <span class="hljs-comment">// reject 回调</span>
-        <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">reason</span>) </span>{
-            <span class="hljs-keyword">if</span> (done) <span class="hljs-keyword">return</span>
-            done = <span class="hljs-literal">true</span>
-            reject(promise, reason)
-        }
-    )
- <span class="hljs-comment">// 同步异常直接执行 reject</span>
-<span class="hljs-keyword">if</span> (!done &amp;&amp; res === IS_ERROR) {
-    done = <span class="hljs-literal">true</span>
-    reject(promise, LAST_ERROR)
-}
-}
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">tryCallTwo</span>(<span class="hljs-params">fn, a, b</span>) </span>{
-<span class="hljs-keyword">try</span> {
-<span class="hljs-comment">//注入resolve 和 reject 函数参数</span>
-    fn(a, b)
-} <span class="hljs-keyword">catch</span> (ex) {
-    LAST_ERROR = ex
-    <span class="hljs-keyword">return</span> IS_ERROR
-}
-}</code></pre>
-<p>
-    done 为锁，当Promise状态修改之后，不能再被修改; tryCallTwo
-    为简单的 try catch 函数,LAST_ERROR 用于接收错误信息，IS_ERROR
-    为空对象，用于比对是否有错误信息；
-</p>
-<p>接下来如果当前Promise 执行 resolve 时，进入resolve函数查看；</p>
-<pre><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">resolve</span>(<span class="hljs-params">self, newValue</span>) </span>{
-<span class="hljs-comment">// Promise Resolution Procedure: https://github.com/promises-aplus/promises-spec#the-promise-resolution-procedure</span>
-
-<span class="hljs-comment">// 此处判断用于防止传入自身，无限循环</span>
-<span class="hljs-keyword">if</span> (newValue === self) {
-    <span class="hljs-keyword">return</span> reject(self, <span class="hljs-keyword">new</span> <span class="hljs-built_in">TypeError</span>(<span class="hljs-string">'A promise cannot be resolved with itself.'</span>))
-}
-<span class="hljs-comment">// 如果值为复杂类型</span>
-<span class="hljs-keyword">if</span> (newValue &amp;&amp; (<span class="hljs-keyword">typeof</span> newValue === <span class="hljs-string">'object'</span> || <span class="hljs-keyword">typeof</span> newValue === <span class="hljs-string">'function'</span>)) {
-    <span class="hljs-comment">// 获取 then 方法 </span>
-    <span class="hljs-keyword">var</span> then = getThen(newValue)
-    <span class="hljs-comment">// 如果 获取 then 方法 报错，直接 reject</span>
-    <span class="hljs-keyword">if</span> (then === IS_ERROR) <span class="hljs-keyword">return</span> reject(self, LAST_ERROR)
-    <span class="hljs-comment">// newValue为Promise实例</span>
-    <span class="hljs-keyword">if</span> (then === self.then &amp;&amp; newValue <span class="hljs-keyword">instanceof</span> <span class="hljs-built_in">Promise</span>) {
-        <span class="hljs-comment">// 当状态为3时，外层包裹的Promise实例 直接使用返回的promise实例的状态，在 handle 方法中调用；</span>
-        self._state = <span class="hljs-number">3</span>
-        self._value = newValue
-        finale(self)
-        <span class="hljs-keyword">return</span>
-    } 
-    <span class="hljs-comment">// newValue不为Promise实例，但是包含then方法</span>
-    <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> then === <span class="hljs-string">'function'</span>) {
-        doResolve(then.bind(newValue), self)
-        <span class="hljs-keyword">return</span>
-    }
-}
-<span class="hljs-comment">// 简单值 or 不存在then方法,  直接返回结果，当前Promise状态更新为 fulfilled，调用 finale 方法</span>
-self._state = <span class="hljs-number">1</span>
-self._value = newValue
-finale(self)
-}</code></pre>
-<p>
-    self 为当前promise实例， newValue 为传入 resolve中的值，正常调用
-    当前Promise 实例状态会变为 1 （fulfilled）， newValue
-    为返回值，挂载到当前 实例的 _value属性上，而后调用 finale方法
-</p>
-<pre><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">finale</span>(<span class="hljs-params">self</span>) </span>{
-<span class="hljs-comment">// 当前实例的 _deferredState 状态在 handle 函数中变更</span>
-<span class="hljs-keyword">if</span> (self._deferredState === <span class="hljs-number">1</span>) {
-  <span class="hljs-comment">// 调用 handle 函数</span>
-    handle(self, self._deferreds)
-  <span class="hljs-comment">// 清除对于传入函数的引用</span>
-    self._deferreds = <span class="hljs-literal">null</span>
-}
-<span class="hljs-keyword">if</span> (self._deferredState === <span class="hljs-number">2</span>) {
-    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; self._deferreds.length; i++) {
-        handle(self, self._deferreds[i])
-    }
-    self._deferreds = <span class="hljs-literal">null</span>
-}
-}</code></pre>
-
-<pre><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">Handler</span>(<span class="hljs-params">onFulfilled, onRejected, promise</span>) </span>{
-<span class="hljs-keyword">this</span>.onFulfilled = <span class="hljs-keyword">typeof</span> onFulfilled === <span class="hljs-string">'function'</span> ? onFulfilled : <span class="hljs-literal">null</span>
-<span class="hljs-keyword">this</span>.onRejected = <span class="hljs-keyword">typeof</span> onRejected === <span class="hljs-string">'function'</span> ? onRejected : <span class="hljs-literal">null</span>
-<span class="hljs-keyword">this</span>.promise = promise
-}</code></pre>
-<p>接着是介绍 handle 函数：</p>
-<pre><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handle</span>(<span class="hljs-params">self, deferred</span>) </span>{
-<span class="hljs-comment">// 当传入的promise实例状态为3时，即该实例的 _value 挂载的为promise实例，直接使用 _value 的状态即可</span>
-<span class="hljs-keyword">while</span> (self._state === <span class="hljs-number">3</span>) {
-    self = self._value
-}
-   <span class="hljs-comment">//Promise._onHandle 用于追踪 ，于 rejection-tracking.js 模块中复制，正常不会使用到</span>
-<span class="hljs-keyword">if</span> (<span class="hljs-built_in">Promise</span>._onHandle) {
-    <span class="hljs-built_in">Promise</span>._onHandle(self)
-}
-<span class="hljs-comment">// 当 state 为 0 ；记表示当前Promise 实例（self）为异步返回</span>
-<span class="hljs-keyword">if</span> (self._state === <span class="hljs-number">0</span>) {
-    <span class="hljs-keyword">if</span> (self._deferredState === <span class="hljs-number">0</span>) {
-        <span class="hljs-comment">// 变更状态 调用 finale 函数是会用到</span>
-        self._deferredState = <span class="hljs-number">1</span>
-        <span class="hljs-comment">// 挂载 Handler 实例， 用于保存传入then 方法的函数 和 新 new 出来的Promise实例</span>
-        self._deferreds = deferred
-        <span class="hljs-keyword">return</span>
-    }
-    <span class="hljs-comment">// 当前的情况可以查看例三</span>
-    <span class="hljs-keyword">if</span> (self._deferredState === <span class="hljs-number">1</span>) {
-        self._deferredState = <span class="hljs-number">2</span>
-        self._deferreds = [self._deferreds, deferred]
-        <span class="hljs-keyword">return</span>
-    }
-    self._deferreds.push(deferred)
-    <span class="hljs-keyword">return</span>
-}
-<span class="hljs-comment">// 同步调用</span>
-handleResolved(self, deferred)
-}</code></pre>
-<h2 id="md-wj-6">例三</h2>
-<pre><code><span class="hljs-comment">// 纠结了我好久 ...</span>
-<span class="hljs-keyword">const</span> p = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-params">resolve</span> =&gt;</span> setTimeout(resolve, <span class="hljs-number">2000</span>, <span class="hljs-string">"test"</span>))
-p.then(<span class="hljs-function">(<span class="hljs-params">result</span>) =&gt;</span> {
-<span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">// 'a'</span>
-})
-
-p.then(<span class="hljs-function">(<span class="hljs-params">result</span>) =&gt;</span> {
-<span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">// 'a'</span>
-})
-
-p.then(<span class="hljs-function">(<span class="hljs-params">result</span>) =&gt;</span> {
-<span class="hljs-built_in">console</span>.log(result) <span class="hljs-comment">// 'a'</span>
-})</code></pre>
-<pre><code><span class="hljs-keyword">var</span> test = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function">(<span class="hljs-params">r</span>) =&gt;</span> r(<span class="hljs-string">"test"</span>))   ----&gt;  promise 实例
-                                                ↑
-                                                |
-    .then(<span class="hljs-function"><span class="hljs-params">r</span> =&gt;</span> <span class="hljs-built_in">console</span>.log(r))   ----&gt; 调用handle方法中的<span class="hljs-keyword">this</span>为</code></pre>
-<p>
-    handle 方法中的 self
-    为前一个Promise实例,当self._state==0时，即表示 reslove or reject
-    非同步，会将then 中新创建的Promise实例以及参数 resolve
-    ，reject函数 挂载到 Handler 实例上，并将实例挂载到
-    self（也就是之前的promise实例）
-    的<em>deferreds属性上；当self.</em>state 非 0
-    值时，即表示self（也就是之前的promise实例 ）已经更改状态，
-    直接调用 handleResolved方法，先说下同步调用 handleResolved
-    方法：
-</p>
-<pre><code><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleResolved</span>(<span class="hljs-params">self, deferred</span>) </span>{
-<span class="hljs-comment">//源码为调用 asap，这里改写为 setTimeout </span>
-<span class="hljs-comment">// 暂未理解 为嘛要走异步</span>
-setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
-    <span class="hljs-comment">// 因为这里状态已经改变，self._state 的值只有 1 or 2 ，当前一个promise状态为1 时调用onFulfilled（then方法的第一个参数），</span>
-    <span class="hljs-comment">// 为2 调用 onRejected（then方法的第二个参数）</span>
-    <span class="hljs-keyword">var</span> cb = self._state === <span class="hljs-number">1</span> ? deferred.onFulfilled : deferred.onRejected
-    <span class="hljs-comment">// 当 cd 不存在时调用,一般用于 onRejected 函数不传</span>
-    <span class="hljs-comment">// 主要作用可以 可以查看 例四</span>
-    <span class="hljs-keyword">if</span> (cb === <span class="hljs-literal">null</span>) {
-        <span class="hljs-keyword">if</span> (self._state === <span class="hljs-number">1</span>) {
-            resolve(deferred.promise, self._value)
-        } <span class="hljs-keyword">else</span> {
-            reject(deferred.promise, self._value)
-        }
-        <span class="hljs-keyword">return</span>
-    }
-    <span class="hljs-comment">// 当cd 不为空时，直接调用 cd 函数 获取返回值,then 方法中只能使同步函数，</span>
-    <span class="hljs-comment">// 如要使用异步可以直接用 Promise包裹，返回Promise 实例</span>
-
-    <span class="hljs-keyword">var</span> ret = tryCallOne(cb, self._value)
-    <span class="hljs-comment">// 如 cd 调用报错 会返回 IS_ERROR ，直接 reject</span>
-    <span class="hljs-keyword">if</span> (ret === IS_ERROR) {
-        reject(deferred.promise, LAST_ERROR)
-    } <span class="hljs-keyword">else</span> {
-        resolve(deferred.promise, ret)
-    }
-}, <span class="hljs-number">1</span>)
-}
-<span class="hljs-comment">// tryCallOne 函数</span>
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">tryCallOne</span>(<span class="hljs-params">fn, a</span>) </span>{
-<span class="hljs-keyword">try</span> { 
-    <span class="hljs-comment">// 给 then 方法里面的函数注入参数</span>
-    <span class="hljs-keyword">return</span> fn(a)
-} <span class="hljs-keyword">catch</span> (ex) {
-    LAST_ERROR = ex
-    <span class="hljs-keyword">return</span> IS_ERROR
-}
-}</code></pre>
-<p>
-    这里就回到了之前调用 resolve 和 reject 方法
-    ，形成了一个闭环,到这里
-    主要功能了解完了，接下来查看一些其他Promise上的常用方法
-</p>
-<h2 id="md-wj-7">例四</h2>
-<pre><code><span class="hljs-keyword">var</span> test1 = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function">(<span class="hljs-params">resolve,reject</span>)=&gt;</span>resolve(<span class="hljs-string">"test1"</span>))
-.then().then(<span class="hljs-function"><span class="hljs-params">reslut</span>=&gt;</span><span class="hljs-built_in">console</span>.log(reslut,<span class="hljs-string">"11111"</span>),err=&gt;<span class="hljs-built_in">console</span>.log(err,<span class="hljs-string">"222222"</span>))
-<span class="hljs-comment">// test1 1111</span>
-
-<span class="hljs-keyword">var</span> test2 = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function">(<span class="hljs-params">resolve,reject</span>)=&gt;</span>re(<span class="hljs-string">"test2"</span>))
-.then().then(<span class="hljs-function"><span class="hljs-params">reslut</span>=&gt;</span><span class="hljs-built_in">console</span>.log(reslut,<span class="hljs-string">"11111"</span>),err=&gt;<span class="hljs-built_in">console</span>.log(err,<span class="hljs-string">"222222"</span>))
-<span class="hljs-comment">// test2 222222</span></code></pre>
-<h2 id="md-wj-8">Promise done 方法</h2>
-<pre><code><span class="hljs-built_in">Promise</span>.prototype.done = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">onFulfilled, onRejected</span>) </span>{
-<span class="hljs-keyword">var</span> self = <span class="hljs-built_in">arguments</span>.length ? <span class="hljs-keyword">this</span>.then.apply(<span class="hljs-keyword">this</span>, <span class="hljs-built_in">arguments</span>) : <span class="hljs-keyword">this</span>;
-self.then(<span class="hljs-literal">null</span>, <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-setTimeout(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
-  <span class="hljs-keyword">throw</span> err;
-}, <span class="hljs-number">0</span>);
-});
-};</code></pre>
-<p>done 方法只是 调用了 then方法而已，但是不会返回 Promise实例</p>
-<h2 id="md-wj-9">Promise catch 方法</h2>
-<pre><code><span class="hljs-built_in">Promise</span>.prototype[<span class="hljs-string">'catch'</span>] = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">onRejected</span>) </span>{
-<span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.then(<span class="hljs-literal">null</span>, onRejected);
-};</code></pre>
-<p>同理也是调用的then方法，将传入的函数作为onRejected函数</p>
-<h2 id="md-wj-10">Promise resolve 方法</h2>
-<pre><code><span class="hljs-keyword">var</span> TRUE = valuePromise(<span class="hljs-literal">true</span>);
-<span class="hljs-keyword">var</span> FALSE = valuePromise(<span class="hljs-literal">false</span>);
-<span class="hljs-keyword">var</span> NULL = valuePromise(<span class="hljs-literal">null</span>);
-<span class="hljs-keyword">var</span> UNDEFINED = valuePromise(<span class="hljs-literal">undefined</span>);
-<span class="hljs-keyword">var</span> ZERO = valuePromise(<span class="hljs-number">0</span>);
-<span class="hljs-keyword">var</span> EMPTYSTRING = valuePromise(<span class="hljs-string">''</span>);
-<span class="hljs-comment">//设置Promise的状态为 1 ,传入的value 作为返回值</span>
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">valuePromise</span>(<span class="hljs-params">value</span>) </span>{
-<span class="hljs-comment">//Promise._noop 为 function noop(){},之前有挂载的</span>
-<span class="hljs-keyword">var</span> p = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-built_in">Promise</span>._noop);
-p._state = <span class="hljs-number">1</span>;
-p._value = value;
-<span class="hljs-keyword">return</span> p;
-}
-<span class="hljs-built_in">Promise</span>.resolve = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">value</span>) </span>{
-<span class="hljs-keyword">if</span> (value <span class="hljs-keyword">instanceof</span> <span class="hljs-built_in">Promise</span>) <span class="hljs-keyword">return</span> value;
-
-<span class="hljs-keyword">if</span> (value === <span class="hljs-literal">null</span>) <span class="hljs-keyword">return</span> NULL;
-<span class="hljs-keyword">if</span> (value === <span class="hljs-literal">undefined</span>) <span class="hljs-keyword">return</span> UNDEFINED;
-<span class="hljs-keyword">if</span> (value === <span class="hljs-literal">true</span>) <span class="hljs-keyword">return</span> TRUE;
-<span class="hljs-keyword">if</span> (value === <span class="hljs-literal">false</span>) <span class="hljs-keyword">return</span> FALSE;
-<span class="hljs-keyword">if</span> (value === <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> ZERO;
-<span class="hljs-keyword">if</span> (value === <span class="hljs-string">''</span>) <span class="hljs-keyword">return</span> EMPTYSTRING;
-
-<span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> value === <span class="hljs-string">'object'</span> || <span class="hljs-keyword">typeof</span> value === <span class="hljs-string">'function'</span>) {
-<span class="hljs-keyword">try</span> {
-  <span class="hljs-comment">// 如果包含 then方法，将then方法传入作为 new Promise 的参数</span>
-  <span class="hljs-keyword">var</span> then = value.then;
-  <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> then === <span class="hljs-string">'function'</span>) {
-    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(then.bind(value));
-  }
-} <span class="hljs-keyword">catch</span> (ex) {
-  <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">resolve, reject</span>) </span>{
-    reject(ex);
-  });
-}
-}
-<span class="hljs-keyword">return</span> valuePromise(value);
-};</code></pre>
-<p>简单的包装为 Promise 而已，修改状态值，设置默认返回值；</p>
-<h2 id="md-wj-11">Promise reject 方法</h2>
-<pre><code><span class="hljs-built_in">Promise</span>.reject = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">value</span>) </span>{
-<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">resolve, reject</span>) </span>{
-reject(value);
-});
-};</code></pre>
-<p>同上….</p>
-<h2 id="md-wj-12">Promise race 方法</h2>
-<pre><code><span class="hljs-built_in">Promise</span>.race = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">values</span>) </span>{
-<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">resolve, reject</span>) </span>{
-values.forEach(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">value</span>)</span>{
-  <span class="hljs-built_in">Promise</span>.resolve(value).then(resolve, reject);
-});
-});
-};</code></pre>
-<p>
-    race 放发是将数组值用 Promise.resolve 包裹
-    ，最先改变状态的值作为当前Promise状态返回
-</p>
-<h2 id="md-wj-13">Promise all 方法</h2>
-<pre><code><span class="hljs-built_in">Promise</span>.all = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">arr</span>) </span>{
-<span class="hljs-keyword">var</span> args = <span class="hljs-built_in">Array</span>.prototype.slice.call(arr);
-<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">resolve, reject</span>) </span>{
-<span class="hljs-keyword">if</span> (args.length === <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> resolve([]);
-<span class="hljs-comment">// remaining 为数组长度</span>
-<span class="hljs-keyword">var</span> remaining = args.length;
-<span class="hljs-comment">//主要函数</span>
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">res</span>(<span class="hljs-params">i, val</span>) </span>{
-  <span class="hljs-comment">// 这里 类似于 then 方法中的判断</span>
-  <span class="hljs-keyword">if</span> (val &amp;&amp; (<span class="hljs-keyword">typeof</span> val === <span class="hljs-string">'object'</span> || <span class="hljs-keyword">typeof</span> val === <span class="hljs-string">'function'</span>)) {
-    <span class="hljs-comment">//表示为 Promise实例</span>
-    <span class="hljs-keyword">if</span> (val <span class="hljs-keyword">instanceof</span> <span class="hljs-built_in">Promise</span> &amp;&amp; val.then === <span class="hljs-built_in">Promise</span>.prototype.then) {
-      <span class="hljs-keyword">while</span> (val._state === <span class="hljs-number">3</span>) {
-        val = val._value;
-      }
-      <span class="hljs-comment">// 如果 state === 1 ， 表示已通过，再次调用的目的在于传入值用于替换args[i]中的函数</span>
-      <span class="hljs-keyword">if</span> (val._state === <span class="hljs-number">1</span>) <span class="hljs-keyword">return</span> res(i, val._value);
-      <span class="hljs-comment">// 如果 state === 2 , 当前 Promise 实例直接 reject </span>
-      <span class="hljs-keyword">if</span> (val._state === <span class="hljs-number">2</span>) reject(val._value);
-      <span class="hljs-comment">// 如果 state === 0 , 调用 then 方法 </span>
-      val.then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">val</span>) </span>{
-        res(i, val);
-      }, reject);
-      <span class="hljs-keyword">return</span>;
-    } <span class="hljs-keyword">else</span> {
-      <span class="hljs-keyword">var</span> then = val.then;
-      <span class="hljs-comment">// 如果不含 then 方法 直接往下走</span>
-      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> then === <span class="hljs-string">'function'</span>) {
-        <span class="hljs-keyword">var</span> p = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(then.bind(val));
-        p.then(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">val</span>) </span>{
-          res(i, val);
-        }, reject);
-        <span class="hljs-keyword">return</span>;
-      }
-    }
-  }
-  <span class="hljs-comment">// 简单值和 不含then 方法的复杂值 直接作为返回值</span>
-  <span class="hljs-comment">// 将返回值替换 args 中的值</span>
-  args[i] = val;
-  <span class="hljs-comment">// 执行到这相当于 一个值 转换已完成</span>
-  <span class="hljs-keyword">if</span> (--remaining === <span class="hljs-number">0</span>) {
-    <span class="hljs-comment">//remaining === 0 表示所有值转换都已完成 调用 resolve</span>
-    resolve(args);
-  }
-}
-<span class="hljs-comment">//循环将 值放入 res 函数中作为参数</span>
-<span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; args.length; i++) {
-  res(i, args[i]);
-}
-});
-};</code></pre>
-<p>
-    all 方法当 所有值 resolve 时， Promise 实例才会resolve，
-    返回值为数组，并一一对应传入顺序，如一个reject
-    ，则当前实例状态变更为 reject
-</p>
-<p>能看懂一点点了，不错不错 (^o^)/~</p>
-<h2 id="md-wj-14">
-    Promise 新增了一些其他的方法，书写一些 Polyfill 版本
-</h2>
-<h3 id="md-wj-15">finally</h3>
-<pre><code><span class="hljs-built_in">Promise</span>.prototype.finally = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">fn</span>) </span>{
-<span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> fn !== <span class="hljs-string">"function"</span>) <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>;
-<span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.then(
-<span class="hljs-function">(<span class="hljs-params">data</span>) =&gt;</span> {
-  fn();
-  <span class="hljs-keyword">return</span> data;
-},
-(err) =&gt; {
-  <span class="hljs-keyword">try</span> {
-    fn();
-  } <span class="hljs-keyword">catch</span> (error) {
-    err = error;
-  }
-  <span class="hljs-keyword">throw</span> err;
-}
-);
-};</code></pre>
-<h3 id="md-wj-16">allSettled</h3>
-<pre><code><span class="hljs-built_in">Promise</span>.allSettled = <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">arr</span>) </span>{
-<span class="hljs-keyword">var</span> args = <span class="hljs-built_in">Array</span>.prototype.slice.call(arr);
-<span class="hljs-keyword">debugger</span>
-<span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">resolve, reject</span>) </span>{
-<span class="hljs-keyword">if</span> (args.length === <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> resolve([]);
-<span class="hljs-keyword">var</span> remaining = args.length;
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">res</span>(<span class="hljs-params">i, val</span>) </span>{
-  <span class="hljs-keyword">if</span> (val &amp;&amp; (<span class="hljs-keyword">typeof</span> val === <span class="hljs-string">"object"</span> || <span class="hljs-keyword">typeof</span> val === <span class="hljs-string">"function"</span>)) {
-    <span class="hljs-keyword">if</span> (
-      val <span class="hljs-keyword">instanceof</span> <span class="hljs-built_in">Promise</span> &amp;&amp;
-      val.then === <span class="hljs-built_in">Promise</span>.prototype.then
-    ) {
-      <span class="hljs-keyword">while</span> (val._state === <span class="hljs-number">3</span>) {
-        val = val._value;
-      }
-      <span class="hljs-comment">// 如果 state === 1 ， 表示已通过，再次调用的目的在于传入值用于替换args[i]中的函数</span>
-      <span class="hljs-keyword">if</span> (val._state === <span class="hljs-number">1</span>)
-        <span class="hljs-keyword">return</span> res(i, { <span class="hljs-attr">status</span>: <span class="hljs-string">"fulfilled"</span>, <span class="hljs-attr">value</span>: val._value });
-      <span class="hljs-comment">// 如果 state === 2 , 当前 Promise 实例直接 reject</span>
-      <span class="hljs-keyword">if</span> (val._state === <span class="hljs-number">2</span>) {
-        <span class="hljs-comment">// reject(val._value);</span>
-        <span class="hljs-keyword">return</span> res(i, { <span class="hljs-attr">status</span>: <span class="hljs-string">"rejected"</span>, <span class="hljs-attr">reason</span>: val._value });
-      }
-      val.then(
-        <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">val</span>) </span>{
-          res(i, { <span class="hljs-attr">status</span>: <span class="hljs-string">"fulfilled"</span>, <span class="hljs-attr">value</span>: val });
-        },
-        <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-          res(i, { <span class="hljs-attr">status</span>: <span class="hljs-string">"rejected"</span>, <span class="hljs-attr">reason</span>: err });
-        }
-      );
-      <span class="hljs-keyword">return</span>;
-    } <span class="hljs-keyword">else</span> {
-      <span class="hljs-keyword">var</span> then = val.then;
-      <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> then === <span class="hljs-string">"function"</span>) {
-        <span class="hljs-keyword">var</span> p = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Promise</span>(then.bind(val));
-        p.then(
-          <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">val</span>) </span>{
-            res(i, { <span class="hljs-attr">status</span>: <span class="hljs-string">"fulfilled"</span>, <span class="hljs-attr">value</span>: val });
-          },
-          <span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params">err</span>) </span>{
-            res(i, { <span class="hljs-attr">status</span>: <span class="hljs-string">"rejected"</span>, <span class="hljs-attr">reason</span>: err });
-          }
-        );
-        <span class="hljs-keyword">return</span>;
-      }
-    }
-  }
-  <span class="hljs-comment">// 简单值和 不含then 方法的复杂值 直接作为返回值</span>
-  <span class="hljs-comment">// 将返回值替换 args 中的值</span>
-  args[i] = val;
-  <span class="hljs-comment">// 执行到这相当于 一个值 转换已完成</span>
-  <span class="hljs-keyword">if</span> (--remaining === <span class="hljs-number">0</span>) {
-    <span class="hljs-comment">//remaining === 0 表示所有值转换都已完成 调用 resolve</span>
-    resolve(args);
-  }
-}
-<span class="hljs-comment">//循环将 值放入 res 函数中作为参数</span>
-<span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; args.length; i++) {
-  res(i, args[i]);
-}
-});
-};</code></pre>
-<ol>
-    <li>
-        <a
-            target="_blank"
-            href="https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Promise"
-            >参考于 MDN Promise</a
-        >
-    </li>
-    <li>
-        <a target="_blank" href="https://github.com/then/promise"
-            >参考于 github Promise</a
-        >
-    </li>
-</ol>
-</div>
-
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;301 Moved Permanently&lt;/title&gt;&lt;/head&gt;
+&lt;body bgcolor=&quot;white&quot;&gt;
+&lt;center&gt;&lt;h1&gt;301 Moved Permanently&lt;/h1&gt;&lt;/center&gt;
+&lt;hr&gt;&lt;center&gt;openresty&lt;/center&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre><p>这就是一次完整的HTTP请求的过程了，我们可以看到，在TCP通道中传输的，完全是文本。</p><p>在请求部分，第一行被称作 request line，它分为三个部分，HTTP Method，也就是请求的“方法”，请求的路径和请求的协议和版本。</p><p>在响应部分，第一行被称作 response line，它也分为三个部分，协议和版本、状态码和状态文本。</p><p>紧随在request line或者response line之后，是请求头/响应头，这些头由若干行组成，每行是用冒号分隔的名称和值。</p><p>在头之后，以一个空行（两个换行符）为分隔，是请求体/响应体，请求体可能包含文件或者表单数据，响应体则是HTML代码。</p><h2>HTTP协议格式</h2><p>根据上面的分析，我们可以知道HTTP协议，大概可以划分成如下部分。</p><p><img src="https://static001.geekbang.org/resource/image/3d/a1/3db5e0f362bc276b83c7564430ecb0a1.jpg" alt=""></p><p>我们简单看一下，在这些部分中，path是请求的路径完全由服务端来定义，没有很多的特别内容；而version几乎都是固定字符串；response body是我们最熟悉的HTML，我在后面会有专门的课程介绍，这里也就不多讲了。</p><p>下面我们就来逐个给你介绍其它部分。</p><h2>HTTP Method（方法）</h2><p>我们首先来介绍一下request line里面的方法部分。这里的方法跟我们编程中的方法意义类似，表示我们此次HTTP请求希望执行的操作类型。方法有以下几种定义：</p><ul>
+<li>GET</li>
+<li>POST</li>
+<li>HEAD</li>
+<li>PUT</li>
+<li>DELETE</li>
+<li>CONNECT</li>
+<li>OPTIONS</li>
+<li>TRACE</li>
+</ul><p>浏览器通过地址栏访问页面都是GET方法。表单提交产生POST方法。</p><p>HEAD则是跟GET类似，只返回响应头，多数由JavaScript发起。</p><p>PUT和DELETE分别表示添加资源和删除资源，但是实际上这只是语义上的一种约定，并没有强约束。</p><p>CONNECT现在多用于HTTPS和WebSocket。</p><p>OPTIONS和TRACE一般用于调试，多数线上服务都不支持。</p><h2>HTTP Status code（状态码）和 Status text（状态文本）</h2><p>接下来我们看看response line的状态码和状态文本。常见的状态码有以下几种。</p><ul>
+<li>1xx：临时回应，表示客户端请继续。</li>
+<li>2xx：请求成功。
+<ul>
+<li>200：请求成功。</li>
+</ul>
+</li>
+<li>3xx: 表示请求的目标有变化，希望客户端进一步处理。
+<ul>
+<li>301&amp;302：永久性与临时性跳转。</li>
+<li>304：跟客户端缓存没有更新。</li>
+</ul>
+</li>
+<li>4xx：客户端请求错误。
+<ul>
+<li>403：无权限。</li>
+<li>404：表示请求的页面不存在。</li>
+<li>418：It’s a teapot. 这是一个彩蛋，来自ietf的一个愚人节玩笑。（<a href="https://tools.ietf.org/html/rfc2324">超文本咖啡壶控制协议</a>）</li>
+</ul>
+</li>
+<li>5xx：服务端请求错误。
+<ul>
+<li>500：服务端错误。</li>
+<li>503：服务端暂时性错误，可以一会再试。</li>
+</ul>
+</li>
+</ul><p>对我们前端来说，1xx系列的状态码是非常陌生的，原因是1xx的状态被浏览器HTTP库直接处理掉了，不会让上层应用知晓。</p><p>2xx系列的状态最熟悉的就是200，这通常是网页请求成功的标志，也是大家最喜欢的状态码。</p><p>3xx系列比较复杂，301和302两个状态表示当前资源已经被转移，只不过一个是永久性转移，一个是临时性转移。实际上301更接近于一种报错，提示客户端下次别来了。</p><p>304又是一个每个前端必知必会的状态，产生这个状态的前提是：客户端本地已经有缓存的版本，并且在Request中告诉了服务端，当服务端通过时间或者tag，发现没有更新的时候，就会返回一个不含body的304状态。</p><h2>HTTP Head (HTTP头)</h2><p>HTTP头可以看作一个键值对。原则上，HTTP头也是一种数据，我们可以自由定义HTTP头和值。不过在HTTP规范中，规定了一些特殊的HTTP头，我们现在就来了解一下它们。</p><p>在HTTP标准中，有完整的请求/响应头规定，这里我们挑几个重点的说一下：</p><p>我们先来看看Request Header。</p><p><img src="https://static001.geekbang.org/resource/image/2b/a2/2be3e2457f08bdf624837dfaee01e4a2.png" alt=""></p><p>接下来看一下Response Header。<br>
+<img src="https://static001.geekbang.org/resource/image/ef/c9/efdeadf27313e08bf0789a3b5480f7c9.png" alt=""></p><p>这里仅仅列出了我认为比较常见的HTTP头，这些头是我认为前端工程师应该做到不需要查阅，看到就可以知道意思的HTTP头。完整的列表还是请你参考我给出的rfc2616标准。</p><h2>HTTP Request Body</h2><p>HTTP请求的body主要用于提交表单场景。实际上，HTTP请求的body是比较自由的，只要浏览器端发送的body服务端认可就可以了。一些常见的body格式是：</p><ul>
+<li>application/json</li>
+<li>application/x-www-form-urlencoded</li>
+<li>multipart/form-data</li>
+<li>text/xml</li>
+</ul><p>我们使用HTML的form标签提交产生的HTML请求，默认会产生 application/x-www-form-urlencoded 的数据格式，当有文件上传时，则会使用multipart/form-data。</p><h2>HTTPS</h2><p>在HTTP协议的基础上，HTTPS和HTTP2规定了更复杂的内容，但是它基本保持了HTTP的设计思想，即：使用上的Request-Response模式。</p><p>我们首先来了解下HTTPS。HTTPS有两个作用，一是确定请求的目标服务端身份，二是保证传输的数据不会被网络中间节点窃听或者篡改。</p><p>HTTPS的标准也是由RFC规定的，你可以查看它的详情链接：</p><p><a href="https://tools.ietf.org/html/rfc2818">https://tools.ietf.org/html/rfc2818</a></p><p>HTTPS是使用加密通道来传输HTTP的内容。但是HTTPS首先与服务端建立一条TLS加密通道。TLS构建于TCP协议之上，它实际上是对传输的内容做一次加密，所以从传输内容上看，HTTPS跟HTTP没有任何区别。</p><h2>HTTP 2</h2><p>HTTP 2是HTTP 1.1的升级版本，你可以查看它的详情链接。</p><ul>
+<li><a href="https://tools.ietf.org/html/rfc7540">https://tools.ietf.org/html/rfc7540</a></li>
+</ul><p>HTTP 2.0 最大的改进有两点，一是支持服务端推送，二是支持TCP连接复用。</p><p>服务端推送能够在客户端发送第一个请求到服务端时，提前把一部分内容推送给客户端，放入缓存当中，这可以避免客户端请求顺序带来的并行度不高，从而导致的性能问题。</p><p>TCP连接复用，则使用同一个TCP连接来传输多个HTTP请求，避免了TCP连接建立时的三次握手开销，和初建TCP连接时传输窗口小的问题。</p><blockquote>
+<p><span class="reference">Note: 其实很多优化涉及更下层的协议。IP层的分包情况，和物理层的建连时间是需要被考虑的。</span></p>
+</blockquote><h2>结语</h2><p>在这一节内容中，我们一起学习了浏览器的第一步工作，也就是“浏览器首先使用HTTP协议或HTTPS协议，向服务端请求页面”的这一过程。</p><p>在这个过程中，掌握HTTP协议是重中之重。我从一个小实验开始，带你体验了一次完整的HTTP请求过程。我们一起先分析了HTTP协议的结构。接下来，我分别介绍了HTTP方法、HTTP状态码和状态文本、HTTP Head和HTTP Request Body几个重点需要注意的部分。</p><p>最后，我还介绍了HTTPS和HTTP 2这两个补充版本，以便你可以更好地熟悉并理解新的特性。</p><p>你在工作中，是否已经开始使用HTTPS和HTTP 2协议了呢？用到了它们的哪些特性，请留言告诉我吧。</p>
 `;

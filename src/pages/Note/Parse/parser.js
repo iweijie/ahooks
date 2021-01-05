@@ -2,6 +2,41 @@ const EOF = Symbol('EOF');
 let currentToken = null;
 let currentAttribute = null;
 let currentTextNode = null;
+let annotationCount = 0;
+
+const customAttr = {
+  type: true,
+  tagName: true,
+  isSelfClosing: true,
+};
+
+{
+  /* <br>  插入一个简单的换行符，标签是空标签（意味着它没有结束标签，因此这是错误的：<br></br>）。
+
+<hr>  创建一条水平线，在HTML中，<hr> 没有结束标签。在XHTML中，<hr> 必须被正确地关闭，比如 <hr />。
+
+<img> 插入一幅图像，在HTML中，<img> 没有结束标签。在XHTML中，<img> 必须被正确地关闭，比如 <img />。
+
+<link>最常见的用途是链接样式表。在HTML中，<link> 没有结束标签。在XHTML中，<link> 必须被正确地关闭，比如 <link />
+
+<base> 页面上的所有链接规定默认地址或默认目标，在HTML中，<base> 没有结束标签。在XHTML中，<base> 必须被正确地关闭，比如 <base />。
+
+<area> 定义图像映射中的区域，在HTML中，<area> 没有结束标签。在XHTML中，<area> 必须正确地关闭，比如<area />。
+
+<input> 输入框，在HTML中，<input> 没有结束标签。在XHTML中，<input> 必须被正确地关闭，比如 <input />。
+
+<source> 标签为媒介元素（比如 <video> 和 <audio>）定义媒介资源。 */
+}
+const selfCloseTag = {
+  input: true,
+  img: true,
+  hr: true,
+  link: true,
+  br: true,
+  base: true,
+  area: true,
+  source: true,
+};
 
 let stack = [{ type: 'document', children: [] }];
 
@@ -22,7 +57,7 @@ function emit(token) {
       } else if (p === 'class') {
         element.class = token[p];
       }
-      if (p !== 'type' && p !== 'tagName') {
+      if (!customAttr[p]) {
         element.attributes.push({
           name: p,
           value: token[p],
@@ -40,10 +75,14 @@ function emit(token) {
     currentTextNode = null;
   } else if (token.type === 'endTag') {
     if (top.tagName !== token.tagName) {
-      throw new Error(`Tag start end doesn't match!`);
-    } else {
-      stack.pop();
+      if (selfCloseTag[top.tagName]) {
+        stack.pop();
+        return emit(token);
+      } else {
+        throw new Error(`Tag start end doesn't match!`);
+      }
     }
+    stack.pop();
     currentTextNode = null;
   } else if (token.type === 'text') {
     if (currentTextNode === null) {
@@ -76,7 +115,10 @@ function data(c) {
 }
 
 function tagOpen(c) {
-  if (c === '/') {
+  // <!--这是一个注释，注释在浏览器中不会显示-->
+  if (c === '!') {
+    return annotationStart;
+  } else if (c === '/') {
     return endTagOpen;
   } else if (c.match(/^[a-zA-Z]$/)) {
     currentToken = {
@@ -86,6 +128,46 @@ function tagOpen(c) {
     return tagName(c);
   } else {
     return;
+  }
+}
+
+function annotationStart(c) {
+  if (c === '-') {
+    annotationCount++;
+
+    if (annotationCount >= 2) {
+      annotationCount = 0;
+      return annotationText;
+    }
+    return annotationStart;
+  } else {
+    throw new Error('html 格式错误');
+  }
+}
+
+function annotationText(c) {
+  if (c === '-') {
+    annotationCount++;
+    return annotationEnd;
+  } else {
+    return annotationText;
+  }
+}
+
+function annotationEnd(c) {
+  if (annotationCount >= 2) {
+    if (c === '>') {
+      annotationCount = 0;
+      return data;
+    }
+    throw new Error('html 格式错误');
+  }
+  if (c === '-') {
+    annotationCount++;
+    return annotationEnd;
+  } else {
+    annotationCount = 0;
+    return annotationText;
   }
 }
 

@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from 'react';
 import { v4 as uuid } from 'uuid';
-import htmlStr from './htmlString';
+import useUpdateEffect from './hooks/useUpdateEffect';
 import Parse from './Parse/index';
 import styles from './index.less';
 import { get } from 'lodash';
@@ -92,7 +92,6 @@ const parseCustomSplitNode = ({ node, isStart = false, range }) => {
     info.isEnd = true;
     let endNode = endContainer;
 
-    console.log('iweijie', endNode);
     let offset = 0;
     outer: while (endNode && endNode !== node) {
       if (endNode === endContainer) {
@@ -223,7 +222,6 @@ const getAllContainerNodeLevel = ({ range, noteContainer }) => {
 };
 
 const Note = ({ template, value, onChange }) => {
-  console.log('....value', value);
   const parse = useMemo(() => {
     return new Parse({ template: template || '' });
   }, []);
@@ -255,7 +253,6 @@ const Note = ({ template, value, onChange }) => {
             range,
             noteContainer: noteContainer.current,
           });
-          console.log('value----', list);
           onChange && onChange(list);
         },
         {
@@ -268,7 +265,7 @@ const Note = ({ template, value, onChange }) => {
 
   const handleClick = useCallback(() => {}, []);
 
-  useEffect(() => {
+  useUpdateEffect(() => {
     setSnapShoot({ __html: parse.getHTML(value) });
   }, [setSnapShoot, parse, value]);
 
