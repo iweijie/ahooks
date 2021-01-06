@@ -223,6 +223,13 @@ const getAllContainerNodeLevel = ({ range, noteContainer }) => {
 
 const Note = ({ template, value, onChange }) => {
   const parse = useMemo(() => {
+    // 用于格式化html文本
+    if (template) {
+      const div = document.createElement('div');
+      div.innerHTML = template;
+      template = div.innerHTML;
+    }
+
     return new Parse({ template: template || '' });
   }, []);
 
@@ -253,6 +260,7 @@ const Note = ({ template, value, onChange }) => {
             range,
             noteContainer: noteContainer.current,
           });
+          console.log('list:', list);
           onChange && onChange(list);
         },
         {

@@ -1,6 +1,5 @@
-import FSM from './parser';
-import { cloneDeep, isEmpty, get } from 'lodash';
-import { unescape, resolveIntersection } from './tool';
+import { isEmpty, get } from 'lodash';
+import { unescape, escape, resolveIntersection } from './tool';
 
 const endStr = '</span>';
 

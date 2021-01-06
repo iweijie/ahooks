@@ -77,3 +77,5 @@ Strict-Transport-Security: max-age=15768000
 <p><span class="reference">Note: 其实很多优化涉及更下层的协议。IP层的分包情况，和物理层的建连时间是需要被考虑的。</span></p>
 </blockquote><h2>结语</h2><p>在这一节内容中，我们一起学习了浏览器的第一步工作，也就是“浏览器首先使用HTTP协议或HTTPS协议，向服务端请求页面”的这一过程。</p><p>在这个过程中，掌握HTTP协议是重中之重。我从一个小实验开始，带你体验了一次完整的HTTP请求过程。我们一起先分析了HTTP协议的结构。接下来，我分别介绍了HTTP方法、HTTP状态码和状态文本、HTTP Head和HTTP Request Body几个重点需要注意的部分。</p><p>最后，我还介绍了HTTPS和HTTP 2这两个补充版本，以便你可以更好地熟悉并理解新的特性。</p><p>你在工作中，是否已经开始使用HTTPS和HTTP 2协议了呢？用到了它们的哪些特性，请留言告诉我吧。</p>
 `;
+
+// `<p>&lt;center&gt;&lt;h1&gt;301 Moved Permanently&lt;/h1&gt;&lt;/center&gt;</p>`;

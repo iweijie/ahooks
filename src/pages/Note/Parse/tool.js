@@ -11,7 +11,9 @@ export function unescape(str) {
   elem.innerHTML = str;
   return elem.innerText || elem.textContent;
 }
+
 // 获取交集
+// TODO 后续有性能问题再优化
 export const resolveIntersection = function(list, content) {
   if (!list || !list.length) return [];
   let joinList = [];
